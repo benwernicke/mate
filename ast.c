@@ -4,6 +4,7 @@ rptr ast_asynth(ast_t* eb, expr_t* token)
 {
     return (token - eb->buf);
 }
+
 expr_t* ast_synth(ast_t* eb, rptr token)
 {
     return eb->buf + token;
