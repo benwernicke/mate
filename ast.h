@@ -1,16 +1,19 @@
 #ifndef AST_H
 #define AST_H
 #include "error.h"
+#include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef size_t rptr;
 
 typedef enum {
-    AST_TOKEN_NUM, // ben 09.04.22 | numbers
-    AST_TOKEN_BOP, // ben 09.04.22 | binary operations
-    AST_TOKEN_UOP, // ben 09.04.22 | unary operations
-    AST_TOKEN_VAR, // ben 09.04.22 | variables
-    AST_TOKEN_PAR, // ben 09.04.22 | parentheses
+    AST_TOKEN_NUM,       // ben 09.04.22 | numbers
+    AST_TOKEN_BOP,       // ben 09.04.22 | binary operations
+    AST_TOKEN_UOP,       // ben 09.04.22 | unary operations
+    AST_TOKEN_VAR,       // ben 09.04.22 | variables
+    AST_TOKEN_PAR_START, // ben 09.04.22 | open parentheses
+    AST_TOKEN_PAR_CLOSE, // ben 09.04.22 | close parentheses
 } ast_token_type;
 
 typedef enum {
@@ -39,6 +42,7 @@ struct ast_token_t {
         double num;
         ast_token_bop_type bop;
         ast_token_uop_type uop;
+        char var[16];
     } as;
     rptr left;
     rptr right;
