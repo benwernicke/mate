@@ -1,50 +1,119 @@
 #include "ast.h"
 
-rptr ast_asynth(ast_t* eb, expr_t* token)
+static rptr _ast_more(ast_t* ast)
 {
-    return (token - eb->buf);
-}
-
-expr_t* ast_synth(ast_t* eb, rptr token)
-{
-    return eb->buf + token;
-}
-
-expr_t* ast_more(ast_t* eb)
-{
-    if (eb->buf == NULL || eb->used >= eb->alloced) {
-        eb->buf = realloc(eb->buf, (eb->alloced <<= 1) * sizeof(*eb->buf));
+    if (ast->used_tokens >= ast->allocated_tokens) {
+        ast->allocated_tokens = ast->allocated_tokens * 2 + 1;
+        ast->buf = realloc(ast->buf, ast->allocated_tokens);
     }
-    expr_t* token = eb->buf + eb->used++;
-    token->up = token->l = token->r = -1;
+    ast->used_tokens++;
+    ast->buf[ast->used_tokens].left = -1; // ben 09.04.22 | 0 is not invalid due to relative pointers
+    ast->buf[ast->used_tokens].right = -1;
+    return ast->used_tokens;
+}
+
+void ast_free(ast_t* ast)
+{
+    if (ast) {
+        free(ast->buf);
+        free(ast);
+    }
+}
+
+rptr ast_token_left(ast_t* ast, rptr token)
+{
+    return ast->buf[token].left;
+}
+
+rptr ast_token_right(ast_t* ast, rptr token)
+{
+    return ast->buf[token].right;
+}
+
+static rptr _ast_token(ast_t* ast, ast_token_type type, rptr left, rptr right)
+{
+    rptr token = _ast_more(ast);
+    ast->buf[token].type = type;
+    ast->buf[token].left = left;
+    ast->buf[token].right = right;
     return token;
 }
 
-rptr ast_rmore(ast_t* eb)
+static rptr _ast_token_bop(ast_t* ast, ast_token_bop_type type, rptr left, rptr right)
 {
-    return ast_asynth(eb, ast_more(eb));
+    rptr token = _ast_token(ast, AST_TOKEN_BOP, left, right);
+    ast->buf[token].as.bop = type;
+    return token;
 }
 
-expr_t* token_l(ast_t* eb, expr_t* token)
+static rptr _ast_token_uop(ast_t* ast, ast_token_uop_type type, rptr arg)
 {
-    if (token->l == -1) {
-        return NULL;
-    }
-    return eb->buf + token->l;
+    rptr token = _ast_token(ast, AST_TOKEN_BOP, -1, arg);
+    ast->buf[token].as.uop = type;
+    return token;
 }
 
-expr_t* token_r(ast_t* eb, expr_t* token)
+rptr ast_token_add(ast_t* ast, rptr left, rptr right)
 {
-    if (token->r == -1) {
-        return NULL;
-    }
-    return eb->buf + token->r;
+    return _ast_token_bop(ast, AST_TOKEN_BOP_ADD, left, right);
 }
 
-expr_t* token_up(ast_t* eb, expr_t* token)
+rptr ast_token_sub(ast_t* ast, rptr left, rptr right)
 {
-    if (token->up == -1) {
-        return NULL;
-    }
-    return eb->buf + token->up;
+    return _ast_token_bop(ast, AST_TOKEN_BOP_SUB, left, right);
+}
+
+rptr ast_token_mul(ast_t* ast, rptr left, rptr right)
+{
+    return _ast_token_bop(ast, AST_TOKEN_BOP_MUL, left, right);
+}
+
+rptr ast_token_div(ast_t* ast, rptr left, rptr right)
+{
+    return _ast_token_bop(ast, AST_TOKEN_BOP_DIV, left, right);
+}
+
+rptr ast_token_exp(ast_t* ast, rptr left, rptr right)
+{
+    return _ast_token_bop(ast, AST_TOKEN_BOP_EXP, left, right);
+}
+
+rptr ast_token_neg(ast_t* ast, rptr arg)
+{
+    return _ast_token_uop(ast, AST_TOKEN_UOP_NEG, arg);
+}
+
+rptr ast_token_log(ast_t* ast, rptr arg)
+{
+    return _ast_token_uop(ast, AST_TOKEN_UOP_LOG, arg);
+}
+
+rptr ast_token_sin(ast_t* ast, rptr arg)
+{
+    return _ast_token_uop(ast, AST_TOKEN_UOP_SIN, arg);
+}
+
+rptr ast_token_cos(ast_t* ast, rptr arg)
+{
+    return _ast_token_uop(ast, AST_TOKEN_UOP_COS, arg);
+}
+
+rptr ast_token_tan(ast_t* ast, rptr arg)
+{
+    return _ast_token_uop(ast, AST_TOKEN_UOP_TAN, arg);
+}
+
+rptr ast_token_asin(ast_t* ast, rptr arg)
+{
+    return _ast_token_uop(ast, AST_TOKEN_UOP_ASIN, arg);
+}
+
+rptr ast_token_acos(ast_t* ast, rptr arg)
+{
+    return _ast_token_uop(ast, AST_TOKEN_UOP_ACOS, arg);
+}
+
+rptr ast_token_atan(ast_t* ast, rptr arg)
+{
+    return _ast_token_uop(ast, AST_TOKEN_UOP_ATAN, arg);
 }

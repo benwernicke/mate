@@ -6,6 +6,7 @@ mate - Math Engine
 - Use the provided abstraction
 - Don't overcomplicate thinks
 - Every Sub project in its own file with an apropriate header
+- Comments must be started with Name (3 letters identifiable) and date dd.mm.yy
 
 ## Solve
 
@@ -18,3 +19,4 @@ mate - Math Engine
 ## AST
 
 The DS we will build on is an AST which will be handled dynamicly by relative pointers
+- no function returns pointers or receives pointers of nodes -> rptr
