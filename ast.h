@@ -22,6 +22,7 @@ typedef enum {
     AST_TOKEN_BOP_MUL, // ben 09.04.22 | * multiplication
     AST_TOKEN_BOP_DIV, // ben 09.04.22 | / division
     AST_TOKEN_BOP_EXP, // ben 09.04.22 | ^ exponent
+    AST_TOKEN_BOP_EQ,  // ben 10.04.22 | = equals
 } ast_token_bop_type;
 
 typedef enum {
