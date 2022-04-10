@@ -4,7 +4,7 @@ static rptr _ast_more(ast_t* ast)
 {
     if (ast->used_tokens >= ast->allocated_tokens) {
         ast->allocated_tokens = ast->allocated_tokens * 2 + 1;
-        ast->buf = realloc(ast->buf, ast->allocated_tokens);
+        ast->buf = realloc(ast->buf, ast->allocated_tokens * sizeof(ast_token_t));
     }
     ast->used_tokens++;
     ast->buf[ast->used_tokens].left = -1; // ben 09.04.22 | 0 is not invalid due to relative pointers
