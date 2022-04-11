@@ -20,6 +20,16 @@ void ast_free(ast_t* ast)
     }
 }
 
+ast_t* ast_constructor(void)
+{
+    ast_t* ast = malloc(sizeof(*ast));
+    ast->used_tokens = 0;
+    ast->allocated_tokens = 16;
+    ast->buf = malloc(ast->allocated_tokens * sizeof(*ast->buf));
+    ast->root = -1;
+    return ast;
+}
+
 rptr ast_token_left(ast_t* ast, rptr token)
 {
     return ast->buf[token].left;
@@ -158,9 +168,8 @@ static void _lexer_var(ast_t* ast, char** sp)
     (*sp)--;
 }
 
-static ast_t* _lexer(char* s)
+static void _lexer(ast_t* ast, char* s)
 {
-    ast_t* ast = calloc(1, sizeof(ast_t)); // ben 09.04.22 | TODO: should this be here? this is not part of the typical lexer is it expected here then?
     while (*s) {
         if (*s == '+') {
             ast_token_add(ast, -1, -1);
@@ -182,5 +191,4 @@ static ast_t* _lexer(char* s)
         }
         s++;
     }
-    return ast;
 }
