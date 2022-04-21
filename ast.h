@@ -49,6 +49,7 @@ struct ast_token_t {
     rptr left;
     rptr right;
     rptr up;
+    size_t precedence;
 };
 
 typedef struct ast_t ast_t;
@@ -100,4 +101,7 @@ ast_t* ast_ast_from_str(char* s);
 void ast_print_buf(ast_t* ast);
 
 bool ast_lexing_is_semantic_good(ast_t* ast); // ben 21.04.22 | assumes that lexing is not build to tree yet
+                                              //
+void ast_dump_ast(ast_t* ast);
+
 #endif
