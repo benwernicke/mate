@@ -418,7 +418,7 @@ static bool _ast_lexing_is_token_good(ast_t* ast, rptr token)
     return 0;
 }
 
-bool ast_lexing_is_semantic_good(ast_t* ast) // ben 21.04.2022 | assumes that lexing is not build to tree yet
+bool ast_lexing_is_semantic_good(ast_t* ast) // ben 21.04.22 | assumes that lexing is not build to tree yet
 {
     rptr token = 0;
 

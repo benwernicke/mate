@@ -99,5 +99,5 @@ void ast_connect_up(ast_t* ast);
 ast_t* ast_ast_from_str(char* s);
 void ast_print_buf(ast_t* ast);
 
-bool ast_lexing_is_semantic_good(ast_t* ast); // ben 21.04.2022 | assumes that lexing is not build to tree yet
+bool ast_lexing_is_semantic_good(ast_t* ast); // ben 21.04.22 | assumes that lexing is not build to tree yet
 #endif
