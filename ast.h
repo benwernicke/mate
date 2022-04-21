@@ -2,9 +2,9 @@
 #define AST_H
 #include "error.h"
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 typedef size_t rptr;
 
@@ -15,7 +15,7 @@ typedef enum {
     AST_TOKEN_VAR,       // ben 09.04.22 | variables
     AST_TOKEN_PAR_START, // ben 09.04.22 | open parentheses
     AST_TOKEN_PAR_CLOSE, // ben 09.04.22 | close parentheses
-} ast_token_type;
+} ast_token_type_t;
 
 typedef enum {
     AST_TOKEN_BOP_ADD, // ben 09.04.22 | + addition
@@ -24,7 +24,7 @@ typedef enum {
     AST_TOKEN_BOP_DIV, // ben 09.04.22 | / division
     AST_TOKEN_BOP_EXP, // ben 09.04.22 | ^ exponent
     AST_TOKEN_BOP_EQ,  // ben 10.04.22 | = equals
-} ast_token_bop_type;
+} ast_token_bop_type_t;
 
 typedef enum {
     AST_TOKEN_UOP_NEG,  // ben 09.04.22 | -
@@ -35,15 +35,15 @@ typedef enum {
     AST_TOKEN_UOP_ASIN, // ben 09.04.22 | asin() arcus sinus
     AST_TOKEN_UOP_ACOS, // ben 09.04.22 | acos() arcus cosinus
     AST_TOKEN_UOP_ATAN, // ben 09.04.22 | atan() arcus tangens
-} ast_token_uop_type;
+} ast_token_uop_type_t;
 
 typedef struct ast_token_t ast_token_t;
 struct ast_token_t {
-    ast_token_type type;
+    ast_token_type_t type;
     union {
         double num;
-        ast_token_bop_type bop;
-        ast_token_uop_type uop;
+        ast_token_bop_type_t bop;
+        ast_token_uop_type_t uop;
         char var[16];
     } as;
     rptr left;
@@ -59,33 +59,45 @@ struct ast_t {
     ast_token_t* buf;
 };
 
+ast_t* ast_cons(void);
 void ast_free(ast_t* ast);
-
-rptr ast_token_right(ast_t* ast, rptr token);
-rptr ast_token_left(ast_t* ast, rptr token); 
-rptr ast_token_up(ast_t* ast, rptr token);    
-
-void ast_token_up_set(ast_t* ast, rptr token, rptr val);  
-void ast_token_left_set(ast_t* ast, rptr token, rptr val); 
-void ast_token_right_set(ast_t* ast, rptr token, rptr val); 
 
 bool ast_token_is_up_null(ast_t* ast, rptr token);
 bool ast_token_is_left_null(ast_t* ast, rptr token);
 bool ast_token_is_right_null(ast_t* ast, rptr token);
 
+rptr ast_token_left(ast_t* ast, rptr token);
+rptr ast_token_right(ast_t* ast, rptr token);
+rptr ast_token_up(ast_t* ast, rptr token);
 
-rptr ast_token_add(ast_t* ast, rptr left, rptr right);
-rptr ast_token_sub(ast_t* ast, rptr left, rptr right);
-rptr ast_token_mul(ast_t* ast, rptr left, rptr right);
-rptr ast_token_div(ast_t* ast, rptr left, rptr right);
-rptr ast_token_exp(ast_t* ast, rptr left, rptr right);
-rptr ast_token_neg(ast_t* ast, rptr arg);
-rptr ast_token_log(ast_t* ast, rptr arg);
-rptr ast_token_sin(ast_t* ast, rptr arg);
-rptr ast_token_cos(ast_t* ast, rptr arg);
-rptr ast_token_tan(ast_t* ast, rptr arg);
-rptr ast_token_asin(ast_t* ast, rptr arg);
-rptr ast_token_acos(ast_t* ast, rptr arg);
-rptr ast_token_atan(ast_t* ast, rptr arg);
+void ast_token_up_set(ast_t* ast, rptr token, rptr val);
+void ast_token_left_set(ast_t* ast, rptr token, rptr val);
+void ast_token_right_set(ast_t* ast, rptr token, rptr val);
 
+rptr ast_token_add_cons(ast_t* ast, rptr left, rptr right);
+rptr ast_token_sub_cons(ast_t* ast, rptr left, rptr right);
+rptr ast_token_mul_cons(ast_t* ast, rptr left, rptr right);
+rptr ast_token_div_cons(ast_t* ast, rptr left, rptr right);
+rptr ast_token_exp_cons(ast_t* ast, rptr left, rptr right);
+rptr ast_token_neg_cons(ast_t* ast, rptr arg);
+rptr ast_token_log_cons(ast_t* ast, rptr arg);
+rptr ast_token_sin_cons(ast_t* ast, rptr arg);
+rptr ast_token_cos_cons(ast_t* ast, rptr arg);
+rptr ast_token_tan_cons(ast_t* ast, rptr arg);
+rptr ast_token_asin_cons(ast_t* ast, rptr arg);
+rptr ast_token_acos_cons(ast_t* ast, rptr arg);
+rptr ast_token_atan_cons(ast_t* ast, rptr arg);
+rptr ast_token_num_cons(ast_t* ast, double num);
+rptr ast_token_var_cons(ast_t* ast, char* s);
+
+ast_token_type_t ast_token_type(ast_t* ast, rptr token);
+
+void ast_token_print(ast_t* ast, rptr token);
+
+void ast_connect_up(ast_t* ast);
+
+ast_t* ast_ast_from_str(char* s);
+void ast_print_buf(ast_t* ast);
+
+bool ast_lexing_is_semantic_good(ast_t* ast); // ben 21.04.2022 | assumes that lexing is not build to tree yet
 #endif
