@@ -1,5 +1,14 @@
 #include "ast.h"
 
+static rptr _ast_token(ast_t* ast, ast_token_type type, rptr left, rptr right);
+static rptr _ast_token_bop(ast_t* ast, ast_token_bop_type type, rptr left, rptr right);
+static rptr _ast_token_uop(ast_t* ast, ast_token_uop_type type, rptr arg);
+static void _lexer_num(ast_t* ast, char** sp);
+static void _lexer_var(ast_t* ast, char** sp);
+static void _lexer(ast_t* ast, char* s);
+static void _ast_connect_up_helper(ast_t* ast, rptr top, rptr curr);
+static rptr _ast_more(ast_t* ast);
+
 static rptr _ast_more(ast_t* ast)
 {
     if (ast->used_tokens >= ast->allocated_tokens) {
@@ -7,9 +16,29 @@ static rptr _ast_more(ast_t* ast)
         ast->buf = realloc(ast->buf, ast->allocated_tokens * sizeof(ast_token_t));
     }
     ast->used_tokens++;
-    ast->buf[ast->used_tokens].left = -1; // ben 09.04.22 | 0 is not invalid due to relative pointers
-    ast->buf[ast->used_tokens].right = -1;
+
+    // ben 09.04.22 | 0 is not invalid due to relative pointers 
+    // ben 21.04.22 | if -1 is no longer nullvalue you need to check ast_token_is_up/left/right_null etc
+    ast_token_up_set(ast, ast->used_tokens, -1);
+    ast_token_left_set(ast, ast->used_tokens, -1);
+    ast_token_right_set(ast, ast->used_tokens, -1);
+
     return ast->used_tokens;
+}
+
+bool ast_token_is_up_null(ast_t* ast, rptr token)
+{
+    return ast_token_up(ast, token) == -1;
+}
+
+bool ast_token_is_left_null(ast_t* ast, rptr token)
+{
+    return ast_token_left(ast, token) == -1;
+}
+
+bool ast_token_is_right_null(ast_t* ast, rptr token)
+{
+    return ast_token_right(ast, token) == -1;
 }
 
 void ast_free(ast_t* ast)
@@ -38,6 +67,26 @@ rptr ast_token_left(ast_t* ast, rptr token)
 rptr ast_token_right(ast_t* ast, rptr token)
 {
     return ast->buf[token].right;
+}
+
+rptr ast_token_up(ast_t* ast, rptr token)
+{
+    return ast->buf[token].up;
+}
+
+void ast_token_up_set(ast_t* ast, rptr token, rptr val)
+{
+    ast->buf[token].up = val;
+}
+
+void ast_token_left_set(ast_t* ast, rptr token, rptr val)
+{
+    ast->buf[token].left = val;
+}
+
+void ast_token_right_set(ast_t* ast, rptr token, rptr val)
+{
+    ast->buf[token].right = val;
 }
 
 static rptr _ast_token(ast_t* ast, ast_token_type type, rptr left, rptr right)
@@ -191,4 +240,24 @@ static void _lexer(ast_t* ast, char* s)
         }
         s++;
     }
+}
+
+static void _ast_connect_up_helper(ast_t* ast, rptr top, rptr curr)
+{
+    ast_token_up_set(ast, curr, top);
+
+    if(!ast_token_is_left_null(ast, curr))
+    {
+        _ast_connect_up_helper(ast, curr, ast_token_left(ast, curr));
+    }
+
+    if(!ast_token_is_right_null(ast, curr))
+    {
+        _ast_connect_up_helper(ast, curr, ast_token_right(ast, curr));
+    }
+}
+
+void ast_connect_up(ast_t* ast)
+{
+    _ast_connect_up_helper(ast, -1, ast->root);
 }

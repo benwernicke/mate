@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 typedef size_t rptr;
 
@@ -47,6 +48,7 @@ struct ast_token_t {
     } as;
     rptr left;
     rptr right;
+    rptr up;
 };
 
 typedef struct ast_t ast_t;
@@ -58,8 +60,19 @@ struct ast_t {
 };
 
 void ast_free(ast_t* ast);
+
 rptr ast_token_right(ast_t* ast, rptr token);
-rptr ast_token_left(ast_t* ast, rptr token);
+rptr ast_token_left(ast_t* ast, rptr token); 
+rptr ast_token_up(ast_t* ast, rptr token);    
+
+void ast_token_up_set(ast_t* ast, rptr token, rptr val);  
+void ast_token_left_set(ast_t* ast, rptr token, rptr val); 
+void ast_token_right_set(ast_t* ast, rptr token, rptr val); 
+
+bool ast_token_is_up_null(ast_t* ast, rptr token);
+bool ast_token_is_left_null(ast_t* ast, rptr token);
+bool ast_token_is_right_null(ast_t* ast, rptr token);
+
 
 rptr ast_token_add(ast_t* ast, rptr left, rptr right);
 rptr ast_token_sub(ast_t* ast, rptr left, rptr right);
