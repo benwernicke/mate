@@ -5,13 +5,11 @@ static ast_token_t* _ast_token_ptr(ast_t* ast, rptr token);
 static rptr _ast_token_cons(ast_t* ast, ast_token_type_t type, rptr left, rptr right);
 static rptr _ast_token_bop_cons(ast_t* ast, ast_token_bop_type_t type, rptr left, rptr right);
 static rptr _ast_token_uop_cons(ast_t* ast, ast_token_uop_type_t type, rptr arg);
-static void _lexer_num(ast_t* ast, char** sp, size_t par_level);
-static void _lexer_char(ast_t* ast, char** sp, size_t par_level);
+static void _lexer_num(ast_t* ast, char** sp);
+static void _lexer_char(ast_t* ast, char** sp);
 static void _lexer(ast_t* ast, char* s);
-static void _ast_connect_up_helper(ast_t* ast, rptr top, rptr curr);
-static void _ast_build(ast_t* ast);
-static rptr _ast_build_helper(ast_t* ast, rptr curr, rptr last);
-static void _ast_lexer_precedence_set(ast_t* ast);
+static void _ast_build(ast_t* ast, size_t* precedences);
+static rptr _ast_build_helper(ast_t* ast, size_t* precedences, rptr lower, rptr upper);
 
 static rptr _ast_more(ast_t* ast)
 {
@@ -21,17 +19,11 @@ static rptr _ast_more(ast_t* ast)
     }
 
     // ben 09.04.22 | 0 is not invalid due to relative pointers
-    // ben 21.04.22 | if -1 is no longer nullvalue you need to check ast_token_is_up/left/right_null etc
-    ast_token_up_set(ast, ast->used_tokens, -1);
+    // ben 21.04.22 | if -1 is no longer nullvalue you need to check ast_token_is_left/right_null etc
     ast_token_left_set(ast, ast->used_tokens, -1);
     ast_token_right_set(ast, ast->used_tokens, -1);
 
     return ast->used_tokens++;
-}
-
-bool ast_token_is_up_null(ast_t* ast, rptr token)
-{
-    return ast_token_up(ast, token) == -1;
 }
 
 bool ast_token_is_left_null(ast_t* ast, rptr token)
@@ -75,16 +67,6 @@ rptr ast_token_left(ast_t* ast, rptr token)
 rptr ast_token_right(ast_t* ast, rptr token)
 {
     return _ast_token_ptr(ast, token)->right;
-}
-
-rptr ast_token_up(ast_t* ast, rptr token)
-{
-    return _ast_token_ptr(ast, token)->up;
-}
-
-void ast_token_up_set(ast_t* ast, rptr token, rptr val)
-{
-    _ast_token_ptr(ast, token)->up = val;
 }
 
 void ast_token_left_set(ast_t* ast, rptr token, rptr val)
@@ -199,7 +181,7 @@ rptr ast_token_var_cons(ast_t* ast, char* s)
     return token;
 }
 
-static void _lexer_num(ast_t* ast, char** sp, size_t par_level)
+static void _lexer_num(ast_t* ast, char** sp)
 {
     char* s = *sp;
     while (**sp && (isdigit(**sp) || **sp == '.')) {
@@ -207,15 +189,13 @@ static void _lexer_num(ast_t* ast, char** sp, size_t par_level)
     }
     char tmp = **sp;
     **sp = '\0';
-    rptr token = ast_token_num_cons(ast, atof(s));
-    _ast_token_ptr(ast, token)->precedence = 6 * par_level + 5;
+    ast_token_num_cons(ast, atof(s));
     **sp = tmp;
     (*sp)--;
 }
 
-static void _lexer_char(ast_t* ast, char** sp, size_t par_level)
+static void _lexer_char(ast_t* ast, char** sp)
 {
-    rptr token;
     char* s = *sp;
     while (**sp && (isdigit(**sp) || isalpha(**sp) || **sp == '_')) {
         (*sp)++;
@@ -225,88 +205,103 @@ static void _lexer_char(ast_t* ast, char** sp, size_t par_level)
     char len = strlen(s);
     if (len == 3) {
         if (strcmp(s, "sin") == 0) {
-            token = ast_token_sin_cons(ast, -1);
+            ast_token_sin_cons(ast, -1);
         } else if (strcmp(s, "cos") == 0) {
-            token = ast_token_cos_cons(ast, -1);
+            ast_token_cos_cons(ast, -1);
         } else if (strcmp(s, "tan") == 0) {
-            token = ast_token_tan_cons(ast, -1);
+            ast_token_tan_cons(ast, -1);
         } else if (strcmp(s, "log") == 0) {
-            token = ast_token_log_cons(ast, -1);
+            ast_token_log_cons(ast, -1);
         } else {
-            token = ast_token_var_cons(ast, s);
+            ast_token_var_cons(ast, s);
         }
     } else if (len == 4) {
         if (strcmp(s, "asin") == 0) {
-            token = ast_token_asin_cons(ast, -1);
+            ast_token_asin_cons(ast, -1);
         } else if (strcmp(s, "acos") == 0) {
-            token = ast_token_acos_cons(ast, -1);
+            ast_token_acos_cons(ast, -1);
         } else if (strcmp(s, "atan") == 0) {
-            token = ast_token_atan_cons(ast, -1);
+            ast_token_atan_cons(ast, -1);
         } else {
-            token = ast_token_var_cons(ast, s);
+            ast_token_var_cons(ast, s);
         }
     } else {
-        token = ast_token_var_cons(ast, s);
+        ast_token_var_cons(ast, s);
     }
-    _ast_token_ptr(ast, token)->precedence = (ast_token_type(ast, token) == AST_TOKEN_VAR) ? 5 : 4;
-    _ast_token_ptr(ast, token)->precedence += 6 * par_level;
     **sp = tmp;
     (*sp)--;
 }
 
-static void _ast_lexer_add_cons(ast_t* ast, size_t par_level)
-{
-    rptr token = _ast_token_bop_cons(ast, AST_TOKEN_BOP_ADD, -1, -1);
-    _ast_token_ptr(ast, token)->precedence = 6 * par_level + 1;
-}
+// ben 22.04.22 | TODO: actual difference between '-' as bop and '-' as uop
 
-static void _ast_lexer_sub_cons(ast_t* ast, size_t par_level)
-{
-    rptr token = _ast_token_bop_cons(ast, AST_TOKEN_BOP_SUB, -1, -1);
-    _ast_token_ptr(ast, token)->precedence = 6 * par_level + 1;
-}
-
-static void _ast_lexer_mul_cons(ast_t* ast, size_t par_level)
-{
-    rptr token = _ast_token_bop_cons(ast, AST_TOKEN_BOP_MUL, -1, -1);
-    _ast_token_ptr(ast, token)->precedence = 6 * par_level + 2;
-}
-
-static void _ast_lexer_div_cons(ast_t* ast, size_t par_level)
-{
-    rptr token = _ast_token_bop_cons(ast, AST_TOKEN_BOP_DIV, -1, -1);
-    _ast_token_ptr(ast, token)->precedence = 6 * par_level + 2;
-}
-
-static void _ast_lexer_exp_cons(ast_t* ast, size_t par_level)
-{
-    rptr token = _ast_token_bop_cons(ast, AST_TOKEN_BOP_EXP, -1, -1);
-    _ast_token_ptr(ast, token)->precedence = 6 * par_level + 3;
-}
-
-// ben 21.04.22 | TODO: do prec calc here
 static void _lexer(ast_t* ast, char* s)
 {
-    size_t par_level = 0;
     while (*s) {
         if (*s == '+') {
-            _ast_lexer_add_cons(ast, par_level);
+            ast_token_add_cons(ast, -1, -1);
         } else if (*s == '-') {
-            _ast_lexer_sub_cons(ast, par_level);
+            ast_token_sub_cons(ast, -1, -1);
         } else if (*s == '*') {
-            _ast_lexer_mul_cons(ast, par_level);
+            ast_token_mul_cons(ast, -1, -1);
         } else if (*s == '/') {
-            _ast_lexer_div_cons(ast, par_level);
+            ast_token_div_cons(ast, -1, -1);
         } else if (*s == '^') {
-            _ast_lexer_exp_cons(ast, par_level);
-        } else if (*s == '(') {
+            ast_token_exp_cons(ast, -1, -1);
+        } else if (isdigit(*s)) {
+            _lexer_num(ast, &s);
+        } else if (isalpha(*s)) {
+            _lexer_char(ast, &s);
+        }
+        s++;
+    }
+}
+
+static void _ast_calc_precedences(ast_t* ast, char* s, size_t* precedence)
+{
+    size_t par_level = 0;
+    rptr token = 0;
+    while (*s) {
+        if (*s == '(') {
             par_level++;
         } else if (*s == ')') {
             par_level--;
-        } else if (isdigit(*s)) {
-            _lexer_num(ast, &s, par_level);
-        } else if (isalpha(*s)) {
-            _lexer_char(ast, &s, par_level);
+        } else if (*s != ' ') {
+            switch (ast_token_type(ast, token)) {
+            case AST_TOKEN_BOP:
+                switch (_ast_token_ptr(ast, token)->as.bop) {
+                case AST_TOKEN_BOP_ADD:
+                case AST_TOKEN_BOP_SUB:
+                    precedence[token] = 6 * par_level + 1;
+                    break;
+                case AST_TOKEN_BOP_MUL:
+                case AST_TOKEN_BOP_DIV:
+                    precedence[token] = 6 * par_level + 2;
+                    break;
+                case AST_TOKEN_BOP_EXP:
+                    precedence[token] = 6 * par_level + 3;
+                    break;
+                case AST_TOKEN_BOP_EQ:
+                    precedence[token] = 6 * par_level + 0;
+                    break;
+                }
+                break;
+            case AST_TOKEN_UOP:
+                precedence[token] = 6 * par_level + 4;
+                while (*s && isalpha(*s)) {
+                    s++;
+                }
+                s--;
+                break;
+            case AST_TOKEN_NUM:
+            case AST_TOKEN_VAR:
+                while (*s && (isalpha(*s) || isdigit(*s) || *s == '_' || *s == '.')) {
+                    s++;
+                }
+                s--;
+                precedence[token] = 6 * par_level + 5;
+                break;
+            }
+            token++;
         }
         s++;
     }
@@ -316,8 +311,15 @@ ast_t* ast_ast_from_str(char* s)
 {
     ast_t* ast = ast_cons();
     _lexer(ast, s);
-    _ast_build(ast);
-    ast_connect_up(ast);
+    size_t precedences[ast->used_tokens];
+    // ben 22.04.22 | we calc precedences of nodes here seperatly to
+    //                avoid having to store them in the struct and to
+    //                avoid using malloc in the lexer
+    //
+    //                probably on more iteration over string is
+    //                probably faster than a lot of heap allocations
+    _ast_calc_precedences(ast, s, precedences);
+    _ast_build(ast, precedences);
     return ast;
 }
 
@@ -385,31 +387,7 @@ void ast_token_print(ast_t* ast, rptr token)
     case AST_TOKEN_VAR:
         printf("%s ", _ast_token_ptr(ast, token)->as.var);
         break;
-    case AST_TOKEN_PAR_START:
-        printf("( ");
-        break;
-    case AST_TOKEN_PAR_CLOSE:
-        printf(") ");
-        break;
     }
-}
-
-static void _ast_connect_up_helper(ast_t* ast, rptr top, rptr curr)
-{
-    ast_token_up_set(ast, curr, top);
-
-    if (!ast_token_is_left_null(ast, curr)) {
-        _ast_connect_up_helper(ast, curr, ast_token_left(ast, curr));
-    }
-
-    if (!ast_token_is_right_null(ast, curr)) {
-        _ast_connect_up_helper(ast, curr, ast_token_right(ast, curr));
-    }
-}
-
-void ast_connect_up(ast_t* ast)
-{
-    _ast_connect_up_helper(ast, -1, ast->root);
 }
 
 void ast_print_buf(ast_t* ast)
@@ -423,22 +401,12 @@ void ast_print_buf(ast_t* ast)
 
 static bool _ast_lexing_is_num_good(ast_t* ast, rptr token)
 {
-    return token + 1 == ast->used_tokens || ast_token_type(ast, token + 1) == AST_TOKEN_BOP || ast_token_type(ast, token + 1) == AST_TOKEN_BOP || ast_token_type(ast, token + 1) == AST_TOKEN_PAR_CLOSE;
+    return token + 1 == ast->used_tokens || ast_token_type(ast, token + 1) == AST_TOKEN_BOP || ast_token_type(ast, token + 1) == AST_TOKEN_BOP;
 }
 
 static bool _ast_lexing_is_op_good(ast_t* ast, rptr token)
 {
-    return (token + 1 < ast->used_tokens) && (ast_token_type(ast, token + 1) == AST_TOKEN_UOP || ast_token_type(ast, token + 1) == AST_TOKEN_NUM || ast_token_type(ast, token + 1) == AST_TOKEN_PAR_START || ast_token_type(ast, token + 1) == AST_TOKEN_VAR);
-}
-
-static bool _ast_lexing_is_par_start_good(ast_t* ast, rptr token)
-{
-    return (token + 1 < ast->used_tokens) && (ast_token_type(ast, token + 1) == AST_TOKEN_UOP || ast_token_type(ast, token + 1) == AST_TOKEN_NUM || ast_token_type(ast, token + 1) == AST_TOKEN_PAR_START || ast_token_type(ast, token + 1) == AST_TOKEN_VAR);
-}
-
-static bool _ast_lexing_is_par_close_good(ast_t* ast, rptr token)
-{
-    return token + 1 == ast->used_tokens || ast_token_type(ast, token + 1) == AST_TOKEN_BOP || ast_token_type(ast, token) == AST_TOKEN_UOP;
+    return (token + 1 < ast->used_tokens) && (ast_token_type(ast, token + 1) == AST_TOKEN_UOP || ast_token_type(ast, token + 1) == AST_TOKEN_NUM || ast_token_type(ast, token + 1) == AST_TOKEN_VAR);
 }
 
 static bool _ast_lexing_is_token_good(ast_t* ast, rptr token)
@@ -451,10 +419,6 @@ static bool _ast_lexing_is_token_good(ast_t* ast, rptr token)
         return _ast_lexing_is_op_good(ast, token);
     case AST_TOKEN_VAR:
         return _ast_lexing_is_num_good(ast, token);
-    case AST_TOKEN_PAR_START:
-        return _ast_lexing_is_par_start_good(ast, token);
-    case AST_TOKEN_PAR_CLOSE:
-        return _ast_lexing_is_par_close_good(ast, token);
     }
     return 0;
 }
@@ -471,12 +435,7 @@ bool ast_lexing_is_semantic_good(ast_t* ast) // ben 21.04.22 | assumes that lexi
     return 1;
 }
 
-static size_t _ast_token_precedence(ast_t* ast, rptr token)
-{
-    return _ast_token_ptr(ast, token)->precedence;
-}
-
-static rptr _ast_build_helper(ast_t* ast, rptr lower, rptr upper)
+static rptr _ast_build_helper(ast_t* ast, size_t* precedences, rptr lower, rptr upper)
 {
     if (lower == upper) {
         return -1;
@@ -484,18 +443,18 @@ static rptr _ast_build_helper(ast_t* ast, rptr lower, rptr upper)
     rptr curr;
     rptr lowest_prec = lower;
     for (curr = lower; curr < upper; curr++) {
-        if (_ast_token_precedence(ast, curr) <= _ast_token_precedence(ast, lowest_prec)) {
+        if (precedences[curr] <= precedences[lowest_prec]) {
             lowest_prec = curr;
         }
     }
-    ast_token_left_set(ast, lowest_prec, _ast_build_helper(ast, lower, lowest_prec));
-    ast_token_right_set(ast, lowest_prec, _ast_build_helper(ast, lowest_prec + 1, upper));
+    ast_token_left_set(ast, lowest_prec, _ast_build_helper(ast, precedences, lower, lowest_prec));
+    ast_token_right_set(ast, lowest_prec, _ast_build_helper(ast, precedences, lowest_prec + 1, upper));
     return lowest_prec;
 }
 
-static void _ast_build(ast_t* ast)
+static void _ast_build(ast_t* ast, size_t* precedences)
 {
-    ast->root = _ast_build_helper(ast, 0, ast->used_tokens);
+    ast->root = _ast_build_helper(ast, precedences, 0, ast->used_tokens);
 }
 
 static void _ast_dump_ast_helper(ast_t* ast, rptr token, int level)
@@ -508,70 +467,7 @@ static void _ast_dump_ast_helper(ast_t* ast, rptr token, int level)
         printf("\t");
     }
     printf("--->");
-    switch (ast_token_type(ast, token)) {
-    case AST_TOKEN_BOP:
-        switch (_ast_token_ptr(ast, token)->as.bop) {
-        case AST_TOKEN_BOP_EQ:
-            printf("= ");
-            break;
-        case AST_TOKEN_BOP_ADD:
-            printf("+ ");
-            break;
-        case AST_TOKEN_BOP_SUB:
-            printf("- ");
-            break;
-        case AST_TOKEN_BOP_MUL:
-            printf("* ");
-            break;
-        case AST_TOKEN_BOP_DIV:
-            printf("/ ");
-            break;
-        case AST_TOKEN_BOP_EXP:
-            printf("^ ");
-            break;
-        }
-        break;
-    case AST_TOKEN_NUM:
-        printf("%lf ", _ast_token_ptr(ast, token)->as.num);
-        break;
-    case AST_TOKEN_PAR_START:
-        printf("( ");
-        break;
-    case AST_TOKEN_PAR_CLOSE:
-        printf(") ");
-        break;
-    case AST_TOKEN_VAR:
-        printf("%s ", _ast_token_ptr(ast, token)->as.var);
-        break;
-    case AST_TOKEN_UOP:
-        switch (_ast_token_ptr(ast, token)->as.uop) {
-        case AST_TOKEN_UOP_NEG:
-            printf("- ");
-            break;
-        case AST_TOKEN_UOP_LOG:
-            printf("log ");
-            break;
-        case AST_TOKEN_UOP_SIN:
-            printf("sin ");
-            break;
-        case AST_TOKEN_UOP_COS:
-            printf("cos ");
-            break;
-        case AST_TOKEN_UOP_TAN:
-            printf("tan ");
-            break;
-        case AST_TOKEN_UOP_ASIN:
-            printf("asin ");
-            break;
-        case AST_TOKEN_UOP_ACOS:
-            printf("acos ");
-            break;
-        case AST_TOKEN_UOP_ATAN:
-            printf("atan ");
-            break;
-        }
-        break;
-    }
+    ast_token_print(ast, token);
     printf("\n");
 
     _ast_dump_ast_helper(ast, ast_token_left(ast, token), level + 1);

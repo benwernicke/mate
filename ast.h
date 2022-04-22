@@ -9,12 +9,10 @@
 typedef size_t rptr;
 
 typedef enum {
-    AST_TOKEN_NUM,       // ben 09.04.22 | numbers
-    AST_TOKEN_BOP,       // ben 09.04.22 | binary operations
-    AST_TOKEN_UOP,       // ben 09.04.22 | unary operations
-    AST_TOKEN_VAR,       // ben 09.04.22 | variables
-    AST_TOKEN_PAR_START, // ben 09.04.22 | open parentheses
-    AST_TOKEN_PAR_CLOSE, // ben 09.04.22 | close parentheses
+    AST_TOKEN_NUM, // ben 09.04.22 | numbers
+    AST_TOKEN_BOP, // ben 09.04.22 | binary operations
+    AST_TOKEN_UOP, // ben 09.04.22 | unary operations
+    AST_TOKEN_VAR, // ben 09.04.22 | variables
 } ast_token_type_t;
 
 typedef enum {
@@ -48,8 +46,6 @@ struct ast_token_t {
     } as;
     rptr left;
     rptr right;
-    rptr up;
-    size_t precedence;
 };
 
 typedef struct ast_t ast_t;
@@ -63,15 +59,12 @@ struct ast_t {
 ast_t* ast_cons(void);
 void ast_free(ast_t* ast);
 
-bool ast_token_is_up_null(ast_t* ast, rptr token);
 bool ast_token_is_left_null(ast_t* ast, rptr token);
 bool ast_token_is_right_null(ast_t* ast, rptr token);
 
 rptr ast_token_left(ast_t* ast, rptr token);
 rptr ast_token_right(ast_t* ast, rptr token);
-rptr ast_token_up(ast_t* ast, rptr token);
 
-void ast_token_up_set(ast_t* ast, rptr token, rptr val);
 void ast_token_left_set(ast_t* ast, rptr token, rptr val);
 void ast_token_right_set(ast_t* ast, rptr token, rptr val);
 
