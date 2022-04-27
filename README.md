@@ -12,6 +12,7 @@ mate - Math Engine
 - getter no postfix required
 - function which return bool have is_ prefix after 'namespace'
 
+
 ## Solve
 
 ## Differentiate
@@ -22,5 +23,9 @@ mate - Math Engine
 
 ## AST
 
+### TODO
+- better input validation / input validation at all
+
 The DS we will build on is an AST which will be handled dynamicly by relative pointers
 - no function returns pointers or receives pointers of nodes -> rptr
+
