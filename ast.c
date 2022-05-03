@@ -399,42 +399,6 @@ void ast_print_buf(ast_t* ast)
     printf("\n");
 }
 
-static bool _ast_lexing_is_num_good(ast_t* ast, rptr token)
-{
-    return token + 1 == ast->used_tokens || ast_token_type(ast, token + 1) == AST_TOKEN_BOP || ast_token_type(ast, token + 1) == AST_TOKEN_BOP;
-}
-
-static bool _ast_lexing_is_op_good(ast_t* ast, rptr token)
-{
-    return (token + 1 < ast->used_tokens) && (ast_token_type(ast, token + 1) == AST_TOKEN_UOP || ast_token_type(ast, token + 1) == AST_TOKEN_NUM || ast_token_type(ast, token + 1) == AST_TOKEN_VAR);
-}
-
-static bool _ast_lexing_is_token_good(ast_t* ast, rptr token)
-{
-    switch (ast_token_type(ast, token)) {
-    case AST_TOKEN_NUM:
-        return _ast_lexing_is_num_good(ast, token);
-    case AST_TOKEN_UOP:
-    case AST_TOKEN_BOP:
-        return _ast_lexing_is_op_good(ast, token);
-    case AST_TOKEN_VAR:
-        return _ast_lexing_is_num_good(ast, token);
-    }
-    return 0;
-}
-
-bool ast_lexing_is_semantic_good(ast_t* ast) // ben 21.04.22 | assumes that lexing is not build to tree yet
-{
-    rptr token = 0;
-
-    for (token = 0; token < ast->used_tokens; token++) {
-        if (!_ast_lexing_is_token_good(ast, token)) {
-            return 0;
-        }
-    }
-    return 1;
-}
-
 static rptr _ast_build_helper(ast_t* ast, size_t* precedences, rptr lower, rptr upper)
 {
     if (lower == upper) {
