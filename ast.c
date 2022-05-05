@@ -31,6 +31,11 @@ bool ast_token_is_left_null(ast_t* ast, rptr token)
     return ast_token_left(ast, token) == -1;
 }
 
+bool ast_token_is_token_null(ast_t* ast, rptr token)
+{
+    return token == -1;
+}
+
 bool ast_token_is_right_null(ast_t* ast, rptr token)
 {
     return ast_token_right(ast, token) == -1;

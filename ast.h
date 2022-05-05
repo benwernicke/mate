@@ -59,6 +59,7 @@ struct ast_t {
 ast_t* ast_cons(void);
 void ast_free(ast_t* ast);
 
+bool ast_token_is_token_null(ast_t* ast, rptr token);
 bool ast_token_is_left_null(ast_t* ast, rptr token);
 bool ast_token_is_right_null(ast_t* ast, rptr token);
 
