@@ -15,4 +15,12 @@
         }                                                \
     }
 
+#define err_error(...)                               \
+    {                                                \
+        fprintf(stderr, "\033[0;31mError: \033[0m"); \
+        fprintf(stderr, __VA_ARGS__);                \
+        fprintf(stderr, "\n");                       \
+        exit(1);                                     \
+    }
+
 #endif
