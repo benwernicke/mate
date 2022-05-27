@@ -2,12 +2,9 @@
 #define DIFF_H
 #include "ast.h"
 
-#include <assert.h>
-#include <ctype.h>
-#include <math.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "error.h"
 #include <string.h>
+
+ast_t* differentiate(ast_t* from, char* var);
 
 #endif

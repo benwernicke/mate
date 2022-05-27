@@ -59,9 +59,13 @@ struct ast_t {
 ast_t* ast_cons(void);
 void ast_free(ast_t* ast);
 
+rptr ast_copy_down(ast_t* from, rptr from_token, ast_t* to);
+
 bool ast_token_is_token_null(ast_t* ast, rptr token);
 bool ast_token_is_left_null(ast_t* ast, rptr token);
 bool ast_token_is_right_null(ast_t* ast, rptr token);
+
+ast_token_t* ast_token_ptr(ast_t* ast, rptr token);
 
 rptr ast_token_left(ast_t* ast, rptr token);
 rptr ast_token_right(ast_t* ast, rptr token);
@@ -94,5 +98,6 @@ void ast_connect_up(ast_t* ast);
 ast_t* ast_ast_from_str(char* s);
 void ast_print_buf(ast_t* ast);
 void ast_dump_ast(ast_t* ast);
+void ast_printf(ast_t* ast);
 
 #endif
