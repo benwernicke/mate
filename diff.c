@@ -16,21 +16,21 @@ inline static bool diff_is_tagged_(ast_t* ast, rptr token, char* var)
 
 static rptr diff_(ast_t* restrict from, const rptr from_token, ast_t* restrict to, char* restrict var);
 
-static rptr diff_add(ast_t* from, rptr from_token, ast_t* to, char* var)
+inline static rptr diff_add_(ast_t* from, rptr from_token, ast_t* to, char* var)
 {
     return ast_token_add_cons(to,
         diff_(from, ast_token_left(from, from_token), to, var),
         diff_(from, ast_token_right(from, from_token), to, var));
 }
 
-static rptr diff_sub(ast_t* from, rptr from_token, ast_t* to, char* var)
+inline static rptr diff_sub_(ast_t* from, rptr from_token, ast_t* to, char* var)
 {
     return ast_token_sub_cons(to,
         diff_(from, ast_token_left(from, from_token), to, var),
         diff_(from, ast_token_right(from, from_token), to, var));
 }
 
-static rptr diff_mul(ast_t* from, rptr from_token, ast_t* to, char* var)
+inline static rptr diff_mul_(ast_t* from, rptr from_token, ast_t* to, char* var)
 {
     return ast_token_add_cons(to,
         ast_token_mul_cons(to,
@@ -41,7 +41,7 @@ static rptr diff_mul(ast_t* from, rptr from_token, ast_t* to, char* var)
             ast_copy_down(from, ast_token_right(from, from_token), to)));
 }
 
-static rptr diff_div(ast_t* from, rptr from_token, ast_t* to, char* var)
+inline static rptr diff_div_(ast_t* from, rptr from_token, ast_t* to, char* var)
 {
     return ast_token_div_cons(to,
         ast_token_sub_cons(to,
@@ -56,7 +56,7 @@ static rptr diff_div(ast_t* from, rptr from_token, ast_t* to, char* var)
             ast_token_num_cons(to, 2)));
 }
 
-static rptr diff_exp(ast_t* from, rptr from_token, ast_t* to, char* var)
+inline static rptr diff_exp_(ast_t* from, rptr from_token, ast_t* to, char* var)
 {
     return ast_token_mul_cons(to,
         ast_copy_down(from, from_token, to),
@@ -70,6 +70,14 @@ static rptr diff_exp(ast_t* from, rptr from_token, ast_t* to, char* var)
                 ast_token_log_cons(to,
                     ast_copy_down(from, ast_token_left(from, from_token), to)),
                 diff_(from, ast_token_right(from, from_token), to, var))));
+}
+
+inline static rptr diff_log_(ast_t* from, rptr from_token, ast_t* to, char* var)
+{
+    return ast_token_div_cons(to,
+            diff_(from, ast_token_left(from, from_token), to, var),
+            ast_copy_down(from, ast_token_left(from, from_token), to)
+            );
 }
 
 static rptr diff_(ast_t* restrict from, const rptr from_token, ast_t* restrict to, char* restrict var)
@@ -87,15 +95,15 @@ static rptr diff_(ast_t* restrict from, const rptr from_token, ast_t* restrict t
     case AST_TOKEN_BOP:
         switch (ast_token_ptr(from, from_token)->as.bop) {
         case AST_TOKEN_BOP_ADD:
-            return diff_add(from, from_token, to, var);
+            return diff_add_(from, from_token, to, var);
         case AST_TOKEN_BOP_SUB:
-            return diff_sub(from, from_token, to, var);
+            return diff_sub_(from, from_token, to, var);
         case AST_TOKEN_BOP_MUL:
-            return diff_mul(from, from_token, to, var);
+            return diff_mul_(from, from_token, to, var);
         case AST_TOKEN_BOP_DIV:
-            return diff_div(from, from_token, to, var);
+            return diff_div_(from, from_token, to, var);
         case AST_TOKEN_BOP_EXP:
-            return diff_exp(from, from_token, to, var);
+            return diff_exp_(from, from_token, to, var);
         case AST_TOKEN_BOP_EQ:
             err_error("you cant differentiate \'=\'");
         }
@@ -104,6 +112,7 @@ static rptr diff_(ast_t* restrict from, const rptr from_token, ast_t* restrict t
         case AST_TOKEN_UOP_NEG:
             TODO;
         case AST_TOKEN_UOP_LOG:
+            return diff_log_(from, from_token, to, var);
             TODO;
         case AST_TOKEN_UOP_SIN:
             TODO;
@@ -119,7 +128,7 @@ static rptr diff_(ast_t* restrict from, const rptr from_token, ast_t* restrict t
             TODO;
         }
     case AST_TOKEN_VAR:
-        return ast_token_num_cons(to, 1); //ben 27.05.22 | don't need to check strcmp(token->var, var) bcs checked earlier
+        return ast_token_num_cons(to, 1); // ben 27.05.22 | don't need to check strcmp(token->var, var) bcs checked earlier
     }
     err_error("Memory Corruption");
 }
