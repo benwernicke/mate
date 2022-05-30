@@ -54,13 +54,20 @@ void ast_free(ast_t* ast)
     }
 }
 
-ast_t* ast_cons(void)
+// ben 30.05.22 | TODO: what do when malloc fail
+
+ast_t* ast_cons(size_t init_buf_size)
 {
+    assert(init_buf_size > 1);
     ast_t* ast = malloc(sizeof(*ast));
-    ast->used_tokens = 0;
-    ast->allocated_tokens = 16;
+    assert(ast);
+    *ast = (ast_t) {
+        .used_tokens = 0,
+        .allocated_tokens = init_buf_size,
+        .root = -1,
+    };
     ast->buf = malloc(ast->allocated_tokens * sizeof(*ast->buf));
-    ast->root = -1;
+    assert(ast->buf);
     return ast;
 }
 
@@ -238,6 +245,7 @@ static void lexer_char_(ast_t* ast, char** sp)
 }
 
 // ben 22.04.22 | TODO: actual difference between '-' as bop and '-' as uop
+// ben 27.05.22 | TODO: input validation!!!
 
 static void lexer_(ast_t* ast, char* s)
 {
@@ -316,7 +324,7 @@ static void ast_calc_precedences_(ast_t* ast, char* s, size_t* precedence)
 
 ast_t* ast_ast_from_str(char* s)
 {
-    ast_t* ast = ast_cons();
+    ast_t* ast = ast_cons(strlen(s)); // a bit more allocated tokens is better then more mallocs space < performance
     lexer_(ast, s);
     size_t precedences[ast->used_tokens];
     // ben 22.04.22 | we calc precedences of nodes here seperatly to
@@ -466,7 +474,7 @@ inline static void ast_printf_(ast_t* ast, rptr token)
     ast_printf_child_(ast, token, ast_token_right(ast, token));
 }
 
-//ben 28.05.22 | returns root of copy
+// ben 28.05.22 | returns root of copy
 rptr ast_copy_down(ast_t* from, rptr from_token, ast_t* to)
 {
     if (ast_token_is_token_null(from, from_token)) {

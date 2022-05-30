@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 typedef size_t rptr;
 
@@ -56,7 +57,7 @@ struct ast_t {
     ast_token_t* buf;
 };
 
-ast_t* ast_cons(void);
+ast_t* ast_cons(size_t init_buf_size);
 void ast_free(ast_t* ast);
 
 rptr ast_copy_down(ast_t* from, rptr from_token, ast_t* to);

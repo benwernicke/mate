@@ -1,11 +1,10 @@
-# mate
+# Mate
 mate - Math Engine
 
-# Devel
-
+# Development
 - Use the provided abstraction
-- Don't overcomplicate thinks
-- Every Sub project in its own file with an apropriate header
+- Don't overcomplicate things
+- Every Sub project in its own file with an appropriate header
 - Comments must be started with Name (3 letters identifiable) and date dd.mm.yy
 - constructors (stuff which allocates and initliaizes) postfix \_cons
 - setter postfix \_set
@@ -18,8 +17,6 @@ mate - Math Engine
 ## Differentiate
 
 ## Integrate
-
-## Simplefy
 
 ## AST
 

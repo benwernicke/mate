@@ -75,9 +75,8 @@ inline static rptr diff_exp_(ast_t* from, rptr from_token, ast_t* to, char* var)
 inline static rptr diff_log_(ast_t* from, rptr from_token, ast_t* to, char* var)
 {
     return ast_token_div_cons(to,
-            diff_(from, ast_token_left(from, from_token), to, var),
-            ast_copy_down(from, ast_token_left(from, from_token), to)
-            );
+        diff_(from, ast_token_left(from, from_token), to, var),
+        ast_copy_down(from, ast_token_left(from, from_token), to));
 }
 
 static rptr diff_(ast_t* restrict from, const rptr from_token, ast_t* restrict to, char* restrict var)
@@ -135,7 +134,7 @@ static rptr diff_(ast_t* restrict from, const rptr from_token, ast_t* restrict t
 
 ast_t* differentiate(ast_t* from, char* var)
 {
-    ast_t* to = ast_cons();
+    ast_t* to = ast_cons(from->used_tokens * 2); // ben 30.05.22 | performance > space
     to->root = diff_(from, from->root, to, var);
     return to;
 }
