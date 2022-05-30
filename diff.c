@@ -81,15 +81,12 @@ inline static rptr diff_log_(ast_t* from, rptr from_token, ast_t* to, char* var)
 
 static rptr diff_(ast_t* restrict from, const rptr from_token, ast_t* restrict to, char* restrict var)
 {
-    if (ast_token_is_token_null(from, from_token)) {
-        err_error("semantic");
-    }
     if (!diff_is_tagged_(from, from_token, var)) {
         return ast_token_num_cons(to, 0);
     }
     switch (ast_token_type(from, from_token)) {
     case AST_TOKEN_NUM:
-        err_error("Memory Corruption");
+        __builtin_unreachable();
         break;
     case AST_TOKEN_BOP:
         switch (ast_token_ptr(from, from_token)->as.bop) {
@@ -129,7 +126,7 @@ static rptr diff_(ast_t* restrict from, const rptr from_token, ast_t* restrict t
     case AST_TOKEN_VAR:
         return ast_token_num_cons(to, 1); // ben 27.05.22 | don't need to check strcmp(token->var, var) bcs checked earlier
     }
-    err_error("Memory Corruption");
+    __builtin_unreachable();
 }
 
 ast_t* differentiate(ast_t* from, char* var)
